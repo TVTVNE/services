@@ -30,7 +30,7 @@ jobs:
         run: npm run build -- --configuration production
         working-directory: ./angular-app
 
-      # Étape 5 : Setup .NETi
+      # Étape 5 : Setup .NETia
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
