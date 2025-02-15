@@ -66,10 +66,10 @@ jobs:
             IP=${{ secrets.IP_EC2_PROD }}
           fi
 
-          scp -o StrictHostKeyChecking=no -i id_rsa -r angular-app/dist/* ec2-user@$IP:/tmp/angular
-          scp -o StrictHostKeyChecking=no -i id_rsa -r publish/* ec2-user@$IP:/tmp/dotnet
+          scp -o StrictHostKeyChecking=no -i id_rsa -r angular-app/dist/* ubuntu@$IP:/tmp/angular
+          scp -o StrictHostKeyChecking=no -i id_rsa -r publish/* ubuntu@$IP:/tmp/dotnet
 
-          ssh -o StrictHostKeyChecking=no -i id_rsa ec2-user@$IP << 'EOT'
+          ssh -o StrictHostKeyChecking=no -i id_rsa ubuntu@$IP << 'EOT'
             sudo rm -rf /var/www/angular-app
             sudo mv /tmp/angular /var/www/angular-app
             sudo rm -rf ~/dotnet
