@@ -16,10 +16,6 @@ jobs:
         uses: actions/checkout@v3
 
       # Étape 2 : Installation des dépendances Angular
-      - name: Clean npm cache and install Angular dependencies
-        run:  npm cache clean --force
-      - name: PAREIL
-         rm -rf node_modules package-lock.json 
       - name: Install Angular dependencies
         run: npm install --legacy-peer-deps
         working-directory: ./angular-app
