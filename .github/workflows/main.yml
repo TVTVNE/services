@@ -57,11 +57,11 @@ jobs:
           fi
 
           # Transfert des fichiers Angular et .NET
-          scp -i id_rsa -r ./angular-app/dist/* ubuntu@$IP:/tmp/angular
-          scp -i id_rsa -r ./publish/* ubuntu@$IP:/tmp/dotnet
+          scp -o StrictHostKeyChecking=no -i id_rsa -r ./angular-app/dist/* ubuntu@$IP:/tmp/angular
+          scp -o StrictHostKeyChecking=no -i id_rsa -r ./publish/* ubuntu@$IP:/tmp/dotnet
 
           # Déploiement sur l'instance EC2
-          ssh -i id_rsa ubuntu@$IP << 'EOT'
+          ssh -o StrictHostKeyChecking=no -i id_rsa ubuntu@$IP << 'EOT'
             sudo rm -rf /var/www/angular-app
             sudo mv /tmp/angular /var/www/angular-app
 
