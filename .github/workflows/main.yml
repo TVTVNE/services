@@ -22,8 +22,9 @@ jobs:
 
       # Étape 3 : Build Angular
       - name: Build Angular
-        run: npm run build --configuration production
+        run: npx ng build --configuration production
         working-directory: ./angular-app
+
 
       # Étape 4 : Setup .NET
       - name: Setup .NET
