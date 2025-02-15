@@ -1,0 +1,95 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Étape 1 : Clonage du dépôt
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Étape 2 : Vérification de la syntaxe Angular
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install Angular dependencies
+        run: npm install
+        working-directory: ./angular-app
+
+      - name: Lint Angular code
+        run: npm run lint
+        working-directory: ./angular-app
+
+      # Étape 3 : Tests unitaires Angular
+      - name: Run Angular unit tests
+        run: npm test -- --watch=false --browsers=ChromeHeadless
+        working-directory: ./angular-app
+
+      # Étape 4 : Vérification de la syntaxe .NET
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0.x'
+
+      - name: Build .NET solution
+        run: dotnet build ./dotnet-api/dotnet-api.csproj --configuration Release
+
+      # Étape 5 : Tests unitaires .NET
+      - name: Run .NET tests
+        run: dotnet test ./dotnet-api/dotnet-api.csproj --configuration Release
+
+      # Étape 6 : Tests d'intégration/E2E
+      - name: Integration tests with Postman
+        run: newman run ./tests/postman-collection.json # Exemple avec Postman/Newman
+
+  deploy:
+    needs: build-and-test # Le déploiement ne s'exécute que si le job "build-and-test" réussit.
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Étape 7 : Build Angular
+      - name: Build Angular
+        run: npm run build -- --prod
+        working-directory: ./angular-app
+
+      # Étape 8 : Publish .NET
+      - name: Publish .NET
+        run: dotnet publish ./dotnet-api/dotnet-api.csproj -c Release -o publish
+
+      # Étape 9 : Déploiement conditionnel
+      - name: Deploy to EC2
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > id_rsa
+          chmod 600 id_rsa
+
+          if [[ "${{ github.ref_name }}" == "dev" ]]; then
+            IP=${{ secrets.IP_EC2_TEST }}
+          elif [[ "${{ github.ref_name }}" == "main" ]]; then
+            IP=${{ secrets.IP_EC2_PROD }}
+          fi
+
+          scp -i id_rsa -r ./angular-app/dist/* ec2-user@$IP:/tmp/angular
+          scp -i id_rsa -r ./publish/* ec2-user@$IP:/tmp/dotnet
+
+          ssh -i id_rsa ec2-user@$IP << 'EOT'
+            sudo rm -rf /var/www/angular-app
+            sudo mv /tmp/angular /var/www/angular-app
+
+            sudo rm -rf ~/dotnet
+            sudo mv /tmp/dotnet ~/dotnet
+
+            sudo systemctl restart nginx 
+            sudo systemctl restart dotnet-api
+          EOT
