@@ -19,27 +19,22 @@ jobs:
       - name: Install Angular dependencies
         run: npm install --legacy-peer-deps
         working-directory: ./angular-app
+
+      # Étape 3 : Fixer les permissions pour Angular CLI
       - name: Fix permissions for Angular CLI
         run: chmod +x node_modules/.bin/ng
         working-directory: ./angular-app
-      - name: Install Angular CLI globally
-        run: npm install -g @angular/cli
 
-      # Étape 3 : Build Angular
+      # Étape 4 : Build Angular en utilisant le binaire local
       - name: Build Angular
-        run: ng build --configuration production
+        run: ./node_modules/.bin/ng build --configuration production
         working-directory: ./angular-app
 
-
-      # Étape 4 : Setup .NET
+      # Étape 5 : Setup .NET et build/publish
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '6.0.x'
-
-      # Étape 5 : Build .NET solution
-
-
 
       - name: Build .NET solution
         run: dotnet build ./dotnet-api/dotnet-api.csproj --configuration Release
@@ -47,31 +42,27 @@ jobs:
       - name: Publish .NET
         run: dotnet publish ./dotnet-api/dotnet-api.csproj -c Release -o publish
 
-      # Étape 6 : Déploiement conditionnel sur EC22
+      # Étape 6 : Déploiement sur EC2
       - name: Deploy to EC2
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" > id_rsa
           chmod 600 id_rsa
 
-          # Détermine l'IP de l'instance EC2 en fonction de la branche
           if [[ "${{ github.ref_name }}" == "dev" ]]; then
             IP=${{ secrets.IP_EC2_TEST }}
           elif [[ "${{ github.ref_name }}" == "prod" ]]; then
             IP=${{ secrets.IP_EC2_PROD }}
           fi
 
-          # Transfert des fichiers Angular et .NET
           scp -i id_rsa -r ./angular-app/dist/* ec2-user@$IP:/tmp/angular
           scp -i id_rsa -r ./publish/* ec2-user@$IP:/tmp/dotnet
 
-          # Déploiement sur l'instance EC2
           ssh -i id_rsa ec2-user@$IP << 'EOT'
             sudo rm -rf /var/www/angular-app
             sudo mv /tmp/angular /var/www/angular-app
-
             sudo rm -rf ~/dotnet
             sudo mv /tmp/dotnet ~/dotnet
-
             sudo systemctl restart nginx
             sudo systemctl restart dotnet-api
           EOT
+        working-directory: .
