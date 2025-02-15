@@ -68,7 +68,7 @@ jobs:
       - name: Publish .NET
         run: dotnet publish ./dotnet-api/dotnet-api.csproj -c Release -o publish
 
-      # Étape 9 : Déploiement conditionnel
+      # Étape 9 : Déploiement conditionnell
       - name: Deploy to EC2
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" > id_rsa
