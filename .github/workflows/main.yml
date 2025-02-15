@@ -33,6 +33,10 @@ jobs:
           dotnet-version: '6.0.x'
 
       # Étape 5 : Build .NET solution
+      - name: Fix permissions for Angular CLI
+        run: chmod +x node_modules/.bin/ng
+        working-directory: ./angular-app
+
       - name: Build .NET solution
         run: dotnet build ./dotnet-api/dotnet-api.csproj --configuration Release
 
