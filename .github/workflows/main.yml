@@ -94,15 +94,15 @@ jobs:
             if [ ! -f /etc/systemd/system/dotnet-api.service ]; then
               sudo tee /etc/systemd/system/dotnet-api.service > /dev/null <<EOF
 [Unit]
-Description=.NET Web API
+Description=DotNet API
 After=network.target
 
 [Service]
-
 WorkingDirectory=/home/ubuntu/dotnet
-ExecStart=/usr/bin/dotnet /home/ubuntu/dotnet/dotnet-api.dll
+ExecStart=/usr/bin/dotnet /home/ubuntu/dotnet/MyApp.dll
 Restart=always
 RestartSec=10
+KillSignal=SIGINT
 SyslogIdentifier=dotnet-api
 User=ubuntu
 Environment=ASPNETCORE_ENVIRONMENT=Production
@@ -112,11 +112,11 @@ WantedBy=multi-user.target
 EOF
             fi
 
-            # Recharger systemd et redémarrer le service
+            # Redémarrer le service pour appliquer les changements
             sudo systemctl daemon-reload
-            sudo systemctl enable dotnet-api.service
-            sudo systemctl restart dotnet-api.service
-
-            # Recharger Nginx si nécessaire
-            sudo systemctl reload nginx
+            sudo systemctl enable dotnet-api
+            sudo systemctl restart dotnet-api
 EOT
+
+          # Supprimer la clé privée après utilisation
+          rm id_rsa
