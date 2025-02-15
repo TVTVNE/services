@@ -18,17 +18,19 @@ jobs:
       # Étape 2 : Installation des dépendances Angular
       - name: Install Angular dependencies
         run: npm install --legacy-peer-deps
-        working-directory: ./angular-app
+        working-directory: angular-app
 
       # Étape 3 : Fixer les permissions pour Angular CLI
       - name: Fix permissions for Angular CLI
         run: chmod +x node_modules/.bin/ng
-        working-directory: ./angular-app
+        working-directory: angular-app
+
 
       # Étape 4 : Build Angular en utilisant le binaire local
       - name: Build Angular
         run: ./node_modules/.bin/ng build --configuration production
-        working-directory: ./angular-app
+        working-directory: angular-app
+
 
       # Étape 5 : Setup .NET et build/publish
       - name: Setup .NET
