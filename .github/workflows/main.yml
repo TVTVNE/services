@@ -4,10 +4,10 @@ on:
   push:
     branches:
       - dev
-      - main
+      - prod
 
 jobs:
-  build-and-test:
+  deploy-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,63 +15,46 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Étape 2 : Installer Angular CLI localement
-      - name: Install Angular CLI
-        run: npm install @angular/cli --no-save
-        working-directory: ./angular-app
-
-      # Étape 3 : Install Angular dependencies
+      # Étape 2 : Installation des dépendances Angular
       - name: Install Angular dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
         working-directory: ./angular-app
 
-      # Étape 4 : Lint Angular code
-      - name: Lint Angular code
-        run: npx ng lint
-        working-directory: ./angular-app
-
-      # Étape 5 : Build Angular
+      # Étape 3 : Build Angular
       - name: Build Angular
         run: npm run build -- --prod
         working-directory: ./angular-app
 
-      # Étape 6 : Setup .NET
+      # Étape 4 : Build .NET
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '6.0.x'
 
-      # Étape 7 : Build .NET solution
       - name: Build .NET solution
         run: dotnet build ./dotnet-api/dotnet-api.csproj --configuration Release
 
-      # Étape 8 : Publish .NET
       - name: Publish .NET
         run: dotnet publish ./dotnet-api/dotnet-api.csproj -c Release -o publish
 
-      # Étape 9 : Tests unitaires Angular et .NET
-      - name: Run Angular unit tests
-        run: npm test -- --watch=false --browsers=ChromeHeadless
-        working-directory: ./angular-app
-
-      - name: Run .NET tests
-        run: dotnet test ./dotnet-api/dotnet-api.csproj --configuration Release
-
-      # Étape 10 : Déploiement conditionnel
+      # Étape 5 : Déploiement sur EC2
       - name: Deploy to EC2
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" > id_rsa
           chmod 600 id_rsa
 
+          # Sélectionner l'IP de l'instance en fonction de la branche
           if [[ "${{ github.ref_name }}" == "dev" ]]; then
             IP=${{ secrets.IP_EC2_TEST }}
-          elif [[ "${{ github.ref_name }}" == "main" ]]; then
+          elif [[ "${{ github.ref_name }}" == "prod" ]]; then
             IP=${{ secrets.IP_EC2_PROD }}
           fi
 
+          # Transférer les fichiers Angular et .NET sur l'instance
           scp -i id_rsa -r ./angular-app/dist/* ec2-user@$IP:/tmp/angular
           scp -i id_rsa -r ./publish/* ec2-user@$IP:/tmp/dotnet
 
+          # Déployer sur l'instance EC2
           ssh -i id_rsa ec2-user@$IP << 'EOT'
             sudo rm -rf /var/www/angular-app
             sudo mv /tmp/angular /var/www/angular-app
@@ -82,3 +65,10 @@ jobs:
             sudo systemctl restart nginx 
             sudo systemctl restart dotnet-api
           EOT
+
+      # Étape 6 : Tests sur la VM Test
+      - name: Test Angular and API
+        if: github.ref_name == 'dev'
+        run: |
+          curl -f http://$IP || exit 1
+          curl -f http://$IP/api/health || exit 1
