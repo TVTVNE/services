@@ -46,7 +46,7 @@ jobs:
       - name: Publish .NET
         run: dotnet publish ./dotnet-api/dotnet-api.csproj -c Release -o publish
 
-      # 7. Déploiement sur EC2
+      # 7. Déploiement sur EC22
       - name: Deploy to EC2
         run: |
           # Crée le fichier id_rsa avec la clé privée depuis le secret
