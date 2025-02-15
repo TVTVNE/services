@@ -19,6 +19,11 @@ jobs:
       - name: Install Angular dependencies
         run: npm install --legacy-peer-deps
         working-directory: ./angular-app
+      - name: Fix permissions for Angular CLI
+        run: chmod +x node_modules/.bin/ng
+        working-directory: ./angular-app
+      - name: Install Angular CLI globally
+        run: npm install -g @angular/cli
 
       # Étape 3 : Build Angular
       - name: Build Angular
@@ -33,11 +38,7 @@ jobs:
           dotnet-version: '6.0.x'
 
       # Étape 5 : Build .NET solution
-      - name: Fix permissions for Angular CLI
-        run: chmod +x node_modules/.bin/ng
-        working-directory: ./angular-app
-      - name: Install Angular CLI globally
-        run: npm install -g @angular/cli
+
 
 
       - name: Build .NET solution
