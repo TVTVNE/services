@@ -93,30 +93,3 @@ jobs:
             # Créer et démarrer le service systemd pour l'API .NET si nécessaire
             if [ ! -f /etc/systemd/system/dotnet-api.service ]; then
               sudo tee /etc/systemd/system/dotnet-api.service > /dev/null <<EOF
-[Unit]
-Description=DotNet API
-After=network.target
-
-[Service]
-WorkingDirectory=/home/ubuntu/dotnet
-ExecStart=/usr/bin/dotnet /home/ubuntu/dotnet/MyApp.dll
-Restart=always
-RestartSec=10
-KillSignal=SIGINT
-SyslogIdentifier=dotnet-api
-User=ubuntu
-Environment=ASPNETCORE_ENVIRONMENT=Production
-
-[Install]
-WantedBy=multi-user.target
-EOF
-            fi
-
-            # Redémarrer le service pour appliquer les changements
-            sudo systemctl daemon-reload
-            sudo systemctl enable dotnet-api
-            sudo systemctl restart dotnet-api
-EOT
-
-          # Supprimer la clé privée après utilisation
-          rm id_rsa
