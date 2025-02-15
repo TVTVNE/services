@@ -1,0 +1,26 @@
+{
+    "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+    "cli": {
+      "analytics": "45a97fbb-ef69-4e82-8d93-2c9c309f55e4"
+    },
+    "version": 1,
+    "projects": {
+      "angular-app": {
+        "root": "",
+        "sourceRoot": "src",
+        "projectType": "application",
+        "architect": {
+          "build": {
+            "builder": "@angular-devkit/build-angular:browser",
+            "options": {
+              "outputPath": "dist/angular-app",
+              "index": "src/index.html",
+              "main": "src/main.ts",
+              "tsConfig": "tsconfig.json"
+            }
+          }
+        }
+      }
+    }
+  }
+  
