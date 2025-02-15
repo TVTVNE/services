@@ -35,7 +35,7 @@ jobs:
         with:
           dotnet-version: '6.0.x'
 
-      # Étape 5 : Build .NET solution
+      # Étape 5 : Build .NET solutionnez
       - name: Build .NET solution
         run: dotnet build ./dotnet-api/dotnet-api.csproj --configuration Release
 
