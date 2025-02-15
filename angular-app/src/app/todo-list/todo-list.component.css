@@ -1,0 +1,59 @@
+.todo-container {
+    width: 300px;
+    margin: 20px auto;
+    font-family: Arial, sans-serif;
+  }
+  
+  .task-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .task-form input {
+    flex: 1;
+    padding: 5px;
+    font-size: 16px;
+  }
+  
+  .task-form button {
+    padding: 5px 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .task-form button:hover {
+    background-color: #0056b3;
+  }
+  
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    padding: 5px;
+    background: #f4f4f4;
+    border-radius: 5px;
+  }
+  
+  li button {
+    background-color: red;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    padding: 3px 8px;
+  }
+  
+  li button:hover {
+    background-color: darkred;
+  }
+  
