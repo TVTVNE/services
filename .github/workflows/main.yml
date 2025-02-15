@@ -61,7 +61,7 @@ jobs:
           fi
 
           # Transfert des fichiers Angular et .NET sur l'instance EC2
-          scp -o StrictHostKeyChecking=no -i id_rsa -r angular-app/dist/* ubuntu@$IP:/tmp/angular
+          scp -o StrictHostKeyChecking=no -i id_rsa -r angular-app/dist/angular-app/* ubuntu@$IP:/tmp/angular
           scp -o StrictHostKeyChecking=no -i id_rsa -r publish/* ubuntu@$IP:/tmp/dotnet
 
           # Connexion SSH pour déployer sur l'instance EC2
