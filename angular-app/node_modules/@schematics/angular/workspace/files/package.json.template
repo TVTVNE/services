@@ -23,10 +23,9 @@
     "zone.js": "<%= latestVersions['zone.js'] %>"
   },
   "devDependencies": {
-    "@angular/cli": "<%= '~' + version %>",
+    "@angular/cli": "<%= '^' + version %>",
     "@angular/compiler-cli": "<%= latestVersions.Angular %>",<% if (!minimal) { %>
-    "@types/jasmine": "<%= latestVersions['@types/jasmine'] %>",<% } %>
-    "@types/node": "<%= latestVersions['@types/node'] %>",<% if (!minimal) { %>
+    "@types/jasmine": "<%= latestVersions['@types/jasmine'] %>",
     "jasmine-core": "<%= latestVersions['jasmine-core'] %>",
     "karma": "<%= latestVersions['karma'] %>",
     "karma-chrome-launcher": "<%= latestVersions['karma-chrome-launcher'] %>",

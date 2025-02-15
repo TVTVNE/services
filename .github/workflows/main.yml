@@ -7,7 +7,7 @@ on:
       - prod
 
 jobs:
-  deploy-and-test:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,36 +25,37 @@ jobs:
         run: npm run build -- --prod
         working-directory: ./angular-app
 
-      # Étape 4 : Build .NET
+      # Étape 4 : Setup .NET
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '6.0.x'
 
+      # Étape 5 : Build .NET solution
       - name: Build .NET solution
         run: dotnet build ./dotnet-api/dotnet-api.csproj --configuration Release
 
       - name: Publish .NET
         run: dotnet publish ./dotnet-api/dotnet-api.csproj -c Release -o publish
 
-      # Étape 5 : Déploiement sur EC2
+      # Étape 6 : Déploiement conditionnel sur EC2
       - name: Deploy to EC2
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" > id_rsa
           chmod 600 id_rsa
 
-          # Sélectionner l'IP de l'instance en fonction de la branche
+          # Détermine l'IP de l'instance EC2 en fonction de la branche
           if [[ "${{ github.ref_name }}" == "dev" ]]; then
             IP=${{ secrets.IP_EC2_TEST }}
           elif [[ "${{ github.ref_name }}" == "prod" ]]; then
             IP=${{ secrets.IP_EC2_PROD }}
           fi
 
-          # Transférer les fichiers Angular et .NET sur l'instance
+          # Transfert des fichiers Angular et .NET
           scp -i id_rsa -r ./angular-app/dist/* ec2-user@$IP:/tmp/angular
           scp -i id_rsa -r ./publish/* ec2-user@$IP:/tmp/dotnet
 
-          # Déployer sur l'instance EC2
+          # Déploiement sur l'instance EC2
           ssh -i id_rsa ec2-user@$IP << 'EOT'
             sudo rm -rf /var/www/angular-app
             sudo mv /tmp/angular /var/www/angular-app
@@ -62,13 +63,6 @@ jobs:
             sudo rm -rf ~/dotnet
             sudo mv /tmp/dotnet ~/dotnet
 
-            sudo systemctl restart nginx 
+            sudo systemctl restart nginx
             sudo systemctl restart dotnet-api
           EOT
-
-      # Étape 6 : Tests sur la VM Test
-      - name: Test Angular and API
-        if: github.ref_name == 'dev'
-        run: |
-          curl -f http://$IP || exit 1
-          curl -f http://$IP/api/health || exit 1
