@@ -20,6 +20,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16
+      - name: Install Angular CLI
+        run: npm install @angular/cli --no-save
+        working-directory: ./angular-app
 
       - name: Install Angular dependencies
         run: npm install
