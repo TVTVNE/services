@@ -15,34 +15,39 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. Debug : Liste des fichiers à la racine du dépôt
+      # (Optionnel) Debug : Liste des fichiers à la racine du dépôt
       - name: List repository files
         run: ls -la
 
-      # 3. Installation des dépendances Angular avec npm ci pour une installation propre
+      # 2. Installation des dépendances Angular (mode CI propre)
       - name: Install Angular dependencies
         run: npm ci --legacy-peer-deps
         working-directory: angular-app
 
-      # 4. Debug : Vérifier que node_modules est bien installé
+      # (Optionnel) Debug : Liste des modules Angular installés
       - name: List angular-app/node_modules
         run: ls -la node_modules
         working-directory: angular-app
 
-      # 5. Installation globale d'Angular CLI
+      # 3. Fixer les permissions pour le binaire Angular CLI
+      - name: Fix permissions for Angular CLI
+        run: chmod +x node_modules/.bin/ng
+        working-directory: angular-app
+
+      # 4. Installation globale d'Angular CLI pour être sûr que "ng" est accessible
       - name: Install Angular CLI globally
         run: npm install -g @angular/cli
 
-      # 6. Debug : Vérifier que la commande "ng" est accessible
+      # 5. Vérifier que la commande "ng" est accessible
       - name: Verify Angular CLI installation
         run: which ng
 
-      # 7. Build Angular en utilisant la commande globale "ng"
+      # 6. Build Angular en production
       - name: Build Angular
         run: ng build --configuration production
         working-directory: angular-app
 
-      # 8. Setup .NET et build/publish
+      # 7. Setup et build/publish .NET
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
@@ -54,26 +59,69 @@ jobs:
       - name: Publish .NET
         run: dotnet publish ./dotnet-api/dotnet-api.csproj -c Release -o publish
 
-            # 9. Déploiement sur EC2
+      # 8. Déploiement sur EC2
       - name: Deploy to EC2
         run: |
+          # Crée le fichier id_rsa avec la clé privée depuis le secret
           echo "${{ secrets.EC2_SSH_KEY }}" > id_rsa
           chmod 600 id_rsa
 
+          # Choix de l'instance en fonction de la branche
           if [[ "${{ github.ref_name }}" == "dev" ]]; then
             IP=${{ secrets.IP_EC2_TEST }}
           elif [[ "${{ github.ref_name }}" == "prod" ]]; then
             IP=${{ secrets.IP_EC2_PROD }}
           fi
 
+          # Transfert des fichiers Angular et .NET sur l'instance EC2
           scp -o StrictHostKeyChecking=no -i id_rsa -r angular-app/dist/* ubuntu@$IP:/tmp/angular
           scp -o StrictHostKeyChecking=no -i id_rsa -r publish/* ubuntu@$IP:/tmp/dotnet
 
+          # Connexion SSH pour déployer sur l'instance EC2
           ssh -o StrictHostKeyChecking=no -i id_rsa ubuntu@$IP << 'EOT'
-            sudo rm -rf /var/www/angular-app
+            # Créer le répertoire pour Angular s'il n'existe pas
+            sudo mkdir -p /var/www/angular-app
+
+            # Installer nginx s'il n'est pas installé (sur Ubuntu)
+            if ! command -v nginx >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y nginx
+              sudo systemctl start nginx
+              sudo systemctl enable nginx
+            fi
+
+            # Déployer l'application Angular
+            sudo rm -rf /var/www/angular-app/*
             sudo mv /tmp/angular /var/www/angular-app
+
+            # Déployer l'API .NET
             sudo rm -rf ~/dotnet
             sudo mv /tmp/dotnet ~/dotnet
+
+            # Créer et démarrer le service systemd pour l'API .NET si nécessaire
+            if [ ! -f /etc/systemd/system/dotnet-api.service ]; then
+              sudo tee /etc/systemd/system/dotnet-api.service > /dev/null <<EOF
+[Unit]
+Description=Dotnet API Service
+After=network.target
+
+[Service]
+WorkingDirectory=/home/ubuntu/dotnet
+ExecStart=/usr/bin/dotnet /home/ubuntu/dotnet/dotnet-api.dll
+Restart=always
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+EOF
+              sudo systemctl daemon-reload
+              sudo systemctl enable dotnet-api
+              sudo systemctl start dotnet-api
+            else
+              sudo systemctl restart dotnet-api
+            fi
+
+            # Redémarrer nginx
             sudo systemctl restart nginx
-            sudo systemctl restart dotnet-api
           EOT
+        working-directory: .
