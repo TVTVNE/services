@@ -36,6 +36,9 @@ jobs:
       - name: Fix permissions for Angular CLI
         run: chmod +x node_modules/.bin/ng
         working-directory: ./angular-app
+      - name: Install Angular CLI globally
+        run: npm install -g @angular/cli
+
 
       - name: Build .NET solution
         run: dotnet build ./dotnet-api/dotnet-api.csproj --configuration Release
