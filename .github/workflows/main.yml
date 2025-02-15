@@ -34,7 +34,7 @@ jobs:
         run: ng build --configuration production
         working-directory: angular-app
 
-      # 6. Setup et build/publish .NETa
+      # 6. Setup et build/publish .NET
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
@@ -46,7 +46,7 @@ jobs:
       - name: Publish .NET
         run: dotnet publish ./dotnet-api/dotnet-api.csproj -c Release -o publish
 
-      # 7. Déploiement sur EC22
+      # 7. Déploiement sur EC2
       - name: Deploy to EC2
         run: |
           # Crée le fichier id_rsa avec la clé privée depuis le secret
