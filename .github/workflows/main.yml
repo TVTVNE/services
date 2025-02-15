@@ -101,27 +101,3 @@ jobs:
             # Créer et démarrer le service systemd pour l'API .NET si nécessaire
             if [ ! -f /etc/systemd/system/dotnet-api.service ]; then
               sudo tee /etc/systemd/system/dotnet-api.service > /dev/null <<EOF
-[Unit]
-Description=Dotnet API Service
-After=network.target
-
-[Service]
-WorkingDirectory=/home/ubuntu/dotnet
-ExecStart=/usr/bin/dotnet /home/ubuntu/dotnet/dotnet-api.dll
-Restart=always
-User=ubuntu
-
-[Install]
-WantedBy=multi-user.target
-EOF
-              sudo systemctl daemon-reload
-              sudo systemctl enable dotnet-api
-              sudo systemctl start dotnet-api
-            else
-              sudo systemctl restart dotnet-api
-            fi
-
-            # Redémarrer nginx
-            sudo systemctl restart nginx
-          EOT
-        working-directory: .
