@@ -11,63 +11,95 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Étape 1 : Clonage du dépôt
+      # 1. Clonage du dépôt
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Étape 2 : Nettoyage des anciens fichiers (node_modules)
-      - name: Clean Node Modules
-        run: rm -rf node_modules
-        working-directory: ./angular-app
-
-      # Étape 3 : Installation des dépendances Angular
+      # 2. Installation des dépendances Angular (mode CI propre)
       - name: Install Angular dependencies
-        run: npm install --legacy-peer-deps
-        working-directory: ./angular-app
+        run: npm ci --legacy-peer-deps
+        working-directory: angular-app
 
-      # Étape 4 : Build Angular
+      # 3. Fixer les permissions pour le binaire Angular CLI
+      - name: Fix permissions for Angular CLI
+        run: chmod +x node_modules/.bin/ng
+        working-directory: angular-app
+
+      # 4. Installation globale d'Angular CLI pour être sûr que "ng" est accessible
+      - name: Install Angular CLI globally
+        run: npm install -g @angular/cli
+
+      # 5. Build Angular en production
       - name: Build Angular
-        run: npm run build -- --configuration production
-        working-directory: ./angular-app
+        run: ng build --configuration production
+        working-directory: angular-app
 
-      # Étape 5 : Setup .NET
+      # 6. Setup et build/publish .NET
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '6.0.x'
 
-      # Étape 6 : Build .NET solution
       - name: Build .NET solution
         run: dotnet build ./dotnet-api/dotnet-api.csproj --configuration Release
 
       - name: Publish .NET
         run: dotnet publish ./dotnet-api/dotnet-api.csproj -c Release -o publish
 
-      # Étape 7 : Déploiement sur EC2
+      # 7. Déploiement sur EC2
       - name: Deploy to EC2
         run: |
+          # Crée le fichier id_rsa avec la clé privée depuis le secret
           echo "${{ secrets.EC2_SSH_KEY }}" > id_rsa
           chmod 600 id_rsa
 
-          # Détermine l'IP de l'instance EC2 en fonction de la branche
+          # Choix de l'instance en fonction de la branche
           if [[ "${{ github.ref_name }}" == "dev" ]]; then
             IP=${{ secrets.IP_EC2_TEST }}
           elif [[ "${{ github.ref_name }}" == "prod" ]]; then
             IP=${{ secrets.IP_EC2_PROD }}
           fi
 
-          # Transfert des fichiers Angular et .NET
-          scp -i id_rsa -r ./angular-app/dist/* ubuntu@$IP:/tmp/angular
-          scp -i id_rsa -r ./publish/* ubuntu@$IP:/tmp/dotnet
+          # Transfert des fichiers Angular et .NET sur l'instance EC2
+          scp -o StrictHostKeyChecking=no -i id_rsa -r angular-app/dist/* ubuntu@$IP:/tmp/angular
+          scp -o StrictHostKeyChecking=no -i id_rsa -r publish/* ubuntu@$IP:/tmp/dotnet
 
-          # Déploiement sur l'instance EC2
-          ssh -i id_rsa ubuntu@$IP << 'EOT'
-            sudo rm -rf /var/www/angular-app
+          # Connexion SSH pour déployer sur l'instance EC2
+          ssh -o StrictHostKeyChecking=no -i id_rsa ubuntu@$IP << 'EOT'
+            # Créer le répertoire pour Angular s'il n'existe pas
+            sudo mkdir -p /var/www/angular-app
+
+            # Déployer l'application Angular
+            sudo rm -rf /var/www/angular-app/*
             sudo mv /tmp/angular /var/www/angular-app
 
+            # Déployer l'API .NET
             sudo rm -rf ~/dotnet
             sudo mv /tmp/dotnet ~/dotnet
 
-            sudo systemctl restart nginx
+            # Créer le fichier systemd "dotnet-api.service" sans EOF
+            sudo bash -c "echo '[Unit]' > /etc/systemd/system/dotnet-api.service"
+            sudo bash -c "echo 'Description=DotNet API' >> /etc/systemd/system/dotnet-api.service"
+            sudo bash -c "echo 'After=network.target' >> /etc/systemd/system/dotnet-api.service"
+            sudo bash -c "echo '' >> /etc/systemd/system/dotnet-api.service"
+            sudo bash -c "echo '[Service]' >> /etc/systemd/system/dotnet-api.service"
+            sudo bash -c "echo 'WorkingDirectory=/home/ubuntu/dotnet' >> /etc/systemd/system/dotnet-api.service"
+            sudo bash -c "echo 'ExecStart=/usr/bin/dotnet /home/ubuntu/dotnet/MyApp.dll' >> /etc/systemd/system/dotnet-api.service"
+            sudo bash -c "echo 'Restart=always' >> /etc/systemd/system/dotnet-api.service"
+            sudo bash -c "echo 'RestartSec=10' >> /etc/systemd/system/dotnet-api.service"
+            sudo bash -c "echo 'KillSignal=SIGINT' >> /etc/systemd/system/dotnet-api.service"
+            sudo bash -c "echo 'SyslogIdentifier=dotnet-api' >> /etc/systemd/system/dotnet-api.service"
+            sudo bash -c "echo 'User=ubuntu' >> /etc/systemd/system/dotnet-api.service"
+            sudo bash -c "echo 'Environment=ASPNETCORE_ENVIRONMENT=Production' >> /etc/systemd/system/dotnet-api.service"
+            sudo bash -c "echo '' >> /etc/systemd/system/dotnet-api.service"
+            sudo bash -c "echo '[Install]' >> /etc/systemd/system/dotnet-api.service"
+            sudo bash -c "echo 'WantedBy=multi-user.target' >> /etc/systemd/system/dotnet-api.service"
+
+            # Redémarrer le service pour appliquer les changements
+            sudo systemctl daemon-reload
+            sudo systemctl enable dotnet-api
             sudo systemctl restart dotnet-api
           EOT
+
+          # Supprimer la clé privée après utilisation
+          rm id_rsa
