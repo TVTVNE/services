@@ -34,7 +34,7 @@ jobs:
         run: ng build --configuration production
         working-directory: angular-app
 
-      # 6. Setup et build/publish .NET
+      # 6. Setup et build/publish .NETa
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
