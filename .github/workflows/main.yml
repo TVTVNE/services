@@ -24,9 +24,16 @@ jobs:
         run: npm install --legacy-peer-deps
         working-directory: ./angular-app
 
-      # Étape 3 : Build Angular
+      # Étape 3 : Build Angular avec logique conditionnelle
       - name: Build Angular
-        run: npm run build -- --prod
+        run: |
+          if [[ "${{ github.ref_name }}" == "prod" ]]; then
+            echo "Building Angular in production mode..."
+            npm run build -- --prod
+          else
+            echo "Building Angular in development mode..."
+            npm run build
+          fi
         working-directory: ./angular-app
 
       # Étape 4 : Setup .NET
@@ -35,7 +42,7 @@ jobs:
         with:
           dotnet-version: '6.0.x'
 
-      # Étape 5 : Build .NET solutionnez
+      # Étape 5 : Build .NET solution
       - name: Build .NET solution
         run: dotnet build ./dotnet-api/dotnet-api.csproj --configuration Release
 
