@@ -60,7 +60,7 @@ jobs:
             IP=${{ secrets.IP_EC2_PROD }}
           fi
 
-          # Transfert des fichiers Angular et .NET sur l'instance EC2
+          # Transfert des fichiers Angular et .NET sur l'instance EC245
           scp -o StrictHostKeyChecking=no -i id_rsa -r angular-app/dist/angular-app/* ubuntu@$IP:/var/www/angular-app
           scp -o StrictHostKeyChecking=no -i id_rsa -r publish/* ubuntu@$IP:/tmp/dotnet
 
