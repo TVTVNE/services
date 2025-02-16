@@ -66,11 +66,12 @@ jobs:
 
           # Connexion SSH pour déployer sur l'instance EC2
           ssh -o StrictHostKeyChecking=no -i id_rsa ubuntu@$IP << 'EOT'
-            # Créer le répertoire pour Angular s'il n'existe pas
-            sudo mkdir -p /var/www/angular-app
+            
 
             # Déployer l'application Angular
             sudo rm -rf /var/www/angular-app/*
+            # Créer le répertoire pour Angular s'il n'existe pas
+            sudo mkdir -p /var/www/angular-app
             sudo mv /tmp/angular/* /var/www/angular-app/browser
 
             # Déployer l'API .NET
