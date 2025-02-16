@@ -72,7 +72,7 @@ jobs:
             sudo rm -rf /var/www/angular-app/*
             # Créer le répertoire pour Angular s'il n'existe pas
             sudo mkdir -p /var/www/angular-app
-            sudo mv /tmp/angular/* /var/www/angular-app/browser
+            sudo mv /tmp/angular/* /var/www/angular-app/
 
             # Déployer l'API .NET
             sudo rm -rf ~/dotnet
