@@ -20,7 +20,7 @@ jobs:
         run: npm ci --legacy-peer-deps
         working-directory: angular-app
 
-      # 3. Fixer les permissions pour le binaire Angular CLI
+      # 3. Fixer les permissions pour le binaire Angular CLII
       - name: Fix permissions for Angular CLI
         run: chmod +x node_modules/.bin/ng
         working-directory: angular-app
