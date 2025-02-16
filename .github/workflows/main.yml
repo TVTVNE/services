@@ -71,7 +71,7 @@ jobs:
 
             # Déployer l'application Angular
             sudo rm -rf /var/www/angular-app/*
-            sudo mv /tmp/angular /var/www/angular-app
+            sudo mv /tmp/angular/* /var/www/angular-app/
 
             # Déployer l'API .NET
             sudo rm -rf ~/dotnet
